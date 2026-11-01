@@ -1,0 +1,6 @@
+{
+  "name": "FitPulse",
+  "description": "Fitness companion to manage daily workout routines, track calorie intake, and generate AI-tailored daily meal plans.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">FitPulse</string>
+    <string name="nav_today">Today</string>
+    <string name="nav_workouts">Workouts</string>
+    <string name="nav_nutrition">Nutrition</string>
+    <string name="nav_progress">Progress</string>
+    <string name="today_overview_title">Daily Pulse</string>
+    <string name="calories_burned_title">Calories Burned</string>
+    <string name="daily_calorie_goal">Goal: 2,400 kcal</string>
+    <string name="active_time_title">Active Minutes</string>
+    <string name="water_intake_title">Water Hydration</string>
+    <string name="start_workout">Start Workout</string>
+    <string name="log_meal">Log Meal</string>
+    <string name="ai_meal_plan_title">AI Meal Recommendations</string>
+</resources>

@@ -107,6 +107,17 @@ fun FitPulseApp(
   var showArtifactDialog by remember { mutableStateOf(false) }
   var activeWorkoutToPlay by remember { mutableStateOf<Workout?>(null) }
 
+  if (!uiState.isAuthenticated) {
+    AuthScreen(
+      onSignInWithEmail = viewModel::signInWithEmail,
+      onSignUpWithEmail = viewModel::signUpWithEmail,
+      onSignInWithGoogle = viewModel::signInWithGoogle,
+      onContinueAsGuest = viewModel::continueAsGuest,
+      modifier = modifier,
+    )
+    return
+  }
+
   Scaffold(
     modifier = modifier.fillMaxSize(),
     topBar = {
@@ -396,8 +407,12 @@ fun FitPulseApp(
       inviteCode = uiState.inviteCode,
       onDismiss = { showCommunityDialog = false },
       onSwitchProfile = viewModel::switchProfile,
-      onAddNewUser = viewModel::addNewUser,
+      onAddNewUser = { name, goal, calories, emoji ->
+        viewModel.addNewUser(name, goal, calories, emoji)
+      },
       onAddBuddy = viewModel::addBuddy,
+      onTogglePrivacy = viewModel::toggleProfilePrivacy,
+      onSignOut = viewModel::signOut,
     )
   }
 

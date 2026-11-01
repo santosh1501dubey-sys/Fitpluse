@@ -68,8 +68,21 @@ data class UserProfile(
   val dailyCalorieGoal: Int = 2400,
   val streakDays: Int = 7,
   val completedWorkoutsCount: Int = 12,
-  val role: String = "Owner",
+  val role: String = "Athlete",
+  val maskedEmail: String = "Private Account",
+  val authProvider: String = "Email",
+  val isPublicProfile: Boolean = true,
 )
+
+fun maskEmailAddress(email: String): String {
+  val trimmed = email.trim()
+  if (trimmed.isEmpty() || !trimmed.contains("@")) return "Private Account"
+  val parts = trimmed.split("@")
+  val local = parts[0]
+  val domain = parts.getOrNull(1) ?: "mail.com"
+  val visibleChar = local.firstOrNull() ?: 'u'
+  return "${visibleChar}***@$domain"
+}
 
 data class BuddyMember(
   val id: String,
@@ -80,3 +93,4 @@ data class BuddyMember(
   val streakDays: Int,
   val isOnline: Boolean = true,
 )
+

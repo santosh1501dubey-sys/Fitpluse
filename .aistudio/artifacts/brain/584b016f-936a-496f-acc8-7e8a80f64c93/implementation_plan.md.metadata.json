@@ -1,6 +1,6 @@
 {
-  "summary":  "Overview of Artifacts in AI Studio and Android (Plan Artifacts, APK/AAB Build Artifacts, and In-App Shareable Artifacts), plus an implementation plan to add Shareable Workout & Nutrition Summary Cards to FitPulse.",
-  "updatedAt":  "2026-11-01T16:03:03.192054288Z",
+  "summary":  "Implementation plan to make FitPulse public-ready with private user login (Email & Google Sign-In), strict owner privacy protection (zero personal email exposure), masked email privacy controls, and per-user account switching/sign-out.",
+  "updatedAt":  "2026-11-01T16:32:17.468889835Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

@@ -30,10 +30,12 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -82,11 +84,14 @@ fun CommunityAndUsersDialog(
   onSwitchProfile: (String) -> Unit,
   onAddNewUser: (name: String, goal: String, calories: Int, emoji: String) -> Unit,
   onAddBuddy: (name: String, status: String, emoji: String) -> Unit,
+  onTogglePrivacy: () -> Unit = {},
+  onSignOut: () -> Unit = {},
 ) {
   val context = LocalContext.current
   var showAddUserDialog by remember { mutableStateOf(false) }
   var showAddBuddyDialog by remember { mutableStateOf(false) }
   var selectedTab by remember { mutableStateOf(0) } // 0: Share & Profiles, 1: Workout Buddies
+  val activeProfile = userProfiles.find { it.id == activeProfileId } ?: userProfiles.firstOrNull()
 
   Dialog(
     onDismissRequest = onDismiss,
@@ -177,6 +182,90 @@ fun CommunityAndUsersDialog(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(14.dp),
           ) {
+            // Private Account & Email Protection Card
+            item {
+              Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF101923)),
+                modifier = Modifier.fillMaxWidth().testTag("card_account_privacy"),
+              ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                  ) {
+                    Row(
+                      verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                      Icon(
+                        imageVector = Icons.Default.VerifiedUser,
+                        contentDescription = null,
+                        tint = NeonPulse,
+                        modifier = Modifier.size(20.dp),
+                      )
+                      Column {
+                        Text(
+                          text = "Account & Email Privacy",
+                          style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                          color = Color.White,
+                        )
+                        Text(
+                          text = "Signed in via ${activeProfile?.authProvider ?: "Email"} • ${activeProfile?.maskedEmail ?: "Private Account"}",
+                          style = MaterialTheme.typography.labelSmall,
+                          color = PulseCyan,
+                        )
+                      }
+                    }
+
+                    OutlinedButton(
+                      onClick = {
+                        onDismiss()
+                        onSignOut()
+                      },
+                      shape = RoundedCornerShape(10.dp),
+                      modifier = Modifier.testTag("btn_sign_out_account"),
+                    ) {
+                      Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(14.dp), tint = CalorieCoral)
+                      Spacer(modifier = Modifier.width(4.dp))
+                      Text("Sign Out", fontSize = 11.sp, color = CalorieCoral, fontWeight = FontWeight.Bold)
+                    }
+                  }
+
+                  Spacer(modifier = Modifier.height(10.dp))
+
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                  ) {
+                    Text(
+                      text = if (activeProfile?.isPublicProfile != false) {
+                        "Visibility: Username only (Email hidden)"
+                      } else {
+                        "Visibility: Strictly Private (Hidden from buddies)"
+                      },
+                      style = MaterialTheme.typography.labelSmall,
+                      color = Color.White.copy(alpha = 0.8f),
+                      modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                      onClick = onTogglePrivacy,
+                      modifier = Modifier.testTag("btn_toggle_profile_privacy"),
+                    ) {
+                      Text(
+                        text = if (activeProfile?.isPublicProfile != false) "Make Private" else "Show Username",
+                        color = NeonPulse,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                      )
+                    }
+                  }
+                }
+              }
+            }
+
             // Public Share Card
             item {
               Card(

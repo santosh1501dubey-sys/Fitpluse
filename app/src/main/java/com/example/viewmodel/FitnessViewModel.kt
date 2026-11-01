@@ -12,6 +12,7 @@ import com.example.model.MealItem
 import com.example.model.MealType
 import com.example.model.UserProfile
 import com.example.model.Workout
+import com.example.model.maskEmailAddress
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +30,7 @@ data class FitnessUiState(
   val selectedMuscleFilter: String = "All", // "All", "Biceps", "Triceps", "Abs", "Chest", "Back", "Shoulders", "Legs"
   val userProfiles: List<UserProfile> = emptyList(),
   val activeProfileId: String = "u1",
+  val isAuthenticated: Boolean = false,
   val buddies: List<BuddyMember> = emptyList(),
   val publicShareUrl: String = "https://ais-pre-eejz7f6w5k4fezdmmiwdyp-133740415274.asia-northeast1.run.app",
   val inviteCode: String = "FIT-PULSE-8924",
@@ -421,9 +423,45 @@ class FitnessViewModel : ViewModel() {
 
     val initialProfiles =
       listOf(
-        UserProfile("u1", "Santosh (Primary)", "⚡", "Muscle Growth & Strength", 2400, 7, 14, "Owner"),
-        UserProfile("u2", "Alex (Powerlifter)", "🏋️", "Heavy Strength & Hypertrophy", 2800, 12, 26, "Member"),
-        UserProfile("u3", "Elena (CrossFit)", "🔥", "Endurance & Agility", 2100, 5, 9, "Member"),
+        UserProfile(
+          id = "u1",
+          name = "Jordan (Athlete)",
+          avatarEmoji = "⚡",
+          goal = "Muscle Growth & Strength",
+          dailyCalorieGoal = 2400,
+          streakDays = 7,
+          completedWorkoutsCount = 14,
+          role = "Athlete",
+          maskedEmail = "Private Account",
+          authProvider = "Email",
+          isPublicProfile = true,
+        ),
+        UserProfile(
+          id = "u2",
+          name = "Alex (Powerlifter)",
+          avatarEmoji = "🏋️",
+          goal = "Heavy Strength & Hypertrophy",
+          dailyCalorieGoal = 2800,
+          streakDays = 12,
+          completedWorkoutsCount = 26,
+          role = "Member",
+          maskedEmail = "Private Account",
+          authProvider = "Email",
+          isPublicProfile = true,
+        ),
+        UserProfile(
+          id = "u3",
+          name = "Elena (CrossFit)",
+          avatarEmoji = "🔥",
+          goal = "Endurance & Agility",
+          dailyCalorieGoal = 2100,
+          streakDays = 5,
+          completedWorkoutsCount = 9,
+          role = "Member",
+          maskedEmail = "Private Account",
+          authProvider = "Google",
+          isPublicProfile = true,
+        ),
       )
 
     val initialBuddies =
@@ -441,6 +479,7 @@ class FitnessViewModel : ViewModel() {
         recommendations = initialRecommendations,
         userProfiles = initialProfiles,
         activeProfileId = "u1",
+        isAuthenticated = false,
         buddies = initialBuddies,
       )
   }
@@ -451,12 +490,20 @@ class FitnessViewModel : ViewModel() {
       val newCalorieGoal = profile?.dailyCalorieGoal ?: state.nutritionSummary.calorieGoal
       state.copy(
         activeProfileId = profileId,
+        isAuthenticated = true,
         nutritionSummary = state.nutritionSummary.copy(calorieGoal = newCalorieGoal),
       )
     }
   }
 
-  fun addNewUser(name: String, goal: String, calories: Int, emoji: String) {
+  fun addNewUser(
+    name: String,
+    goal: String,
+    calories: Int,
+    emoji: String,
+    email: String = "",
+    authProvider: String = "Email",
+  ) {
     val newId = UUID.randomUUID().toString()
     val newProfile =
       UserProfile(
@@ -468,14 +515,110 @@ class FitnessViewModel : ViewModel() {
         streakDays = 1,
         completedWorkoutsCount = 0,
         role = "Member",
+        maskedEmail = maskEmailAddress(email),
+        authProvider = authProvider,
+        isPublicProfile = true,
       )
     _uiState.update { state ->
       state.copy(
         userProfiles = state.userProfiles + newProfile,
         activeProfileId = newId,
+        isAuthenticated = true,
         nutritionSummary = state.nutritionSummary.copy(calorieGoal = calories),
       )
     }
+  }
+
+  fun signInWithEmail(email: String, password: String) {
+    val masked = maskEmailAddress(email)
+    val defaultName =
+      email.substringBefore("@").replaceFirstChar { it.uppercase() }.ifBlank { "Athlete" }
+    _uiState.update { state ->
+      val existing =
+        state.userProfiles.find {
+          it.maskedEmail.equals(masked, ignoreCase = true) ||
+            it.name.equals(defaultName, ignoreCase = true)
+        }
+      if (existing != null) {
+        state.copy(
+          activeProfileId = existing.id,
+          isAuthenticated = true,
+          nutritionSummary = state.nutritionSummary.copy(calorieGoal = existing.dailyCalorieGoal),
+        )
+      } else {
+        val newId = UUID.randomUUID().toString()
+        val newProfile =
+          UserProfile(
+            id = newId,
+            name = defaultName,
+            avatarEmoji = "⚡",
+            goal = "Muscle Growth & Strength",
+            dailyCalorieGoal = 2400,
+            streakDays = 1,
+            completedWorkoutsCount = 0,
+            role = "Athlete",
+            maskedEmail = masked,
+            authProvider = "Email",
+            isPublicProfile = true,
+          )
+        state.copy(
+          userProfiles = listOf(newProfile) + state.userProfiles,
+          activeProfileId = newId,
+          isAuthenticated = true,
+        )
+      }
+    }
+  }
+
+  fun signUpWithEmail(
+    name: String,
+    email: String,
+    password: String,
+    goal: String,
+    calories: Int,
+    emoji: String,
+  ) {
+    addNewUser(
+      name = name,
+      goal = goal,
+      calories = calories,
+      emoji = emoji,
+      email = email,
+      authProvider = "Email",
+    )
+  }
+
+  fun signInWithGoogle(email: String, displayName: String) {
+    addNewUser(
+      name = displayName,
+      goal = "Muscle Growth & Strength",
+      calories = 2400,
+      emoji = "⚡",
+      email = email,
+      authProvider = "Google",
+    )
+  }
+
+  fun continueAsGuest() {
+    _uiState.update { it.copy(isAuthenticated = true) }
+  }
+
+  fun toggleProfilePrivacy() {
+    _uiState.update { state ->
+      val updatedProfiles =
+        state.userProfiles.map { profile ->
+          if (profile.id == state.activeProfileId) {
+            profile.copy(isPublicProfile = !profile.isPublicProfile)
+          } else {
+            profile
+          }
+        }
+      state.copy(userProfiles = updatedProfiles)
+    }
+  }
+
+  fun signOut() {
+    _uiState.update { it.copy(isAuthenticated = false) }
   }
 
   fun addBuddy(name: String, status: String, emoji: String) {

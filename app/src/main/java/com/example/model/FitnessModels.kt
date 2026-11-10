@@ -94,3 +94,49 @@ data class BuddyMember(
   val isOnline: Boolean = true,
 )
 
+enum class SubscriptionTier(val displayName: String, val priceLabel: String, val badgeText: String) {
+  FREE("Free Athlete", "$0", "FREE"),
+  PRO_MONTHLY("FitPulse Pro Monthly", "$4.99 / mo (₹199)", "PRO"),
+  PRO_ANNUAL("FitPulse Pro Annual", "$29.99 / yr (₹999)", "PRO • SAVE 50%"),
+  LIFETIME_VIP("FitPulse Lifetime VIP", "$59.99 once (₹2,499)", "VIP LIFETIME"),
+}
+
+data class SupplementGearItem(
+  val id: String,
+  val name: String,
+  val category: String, // "Supplements" or "Home Gym Gear"
+  val specBadge: String,
+  val benefit: String,
+  val priceDisplay: String,
+  val affiliateCommission: String,
+  val emoji: String,
+  val storeUrl: String,
+  val clicksCount: Int = 0,
+)
+
+data class CoachPlanPackage(
+  val id: String,
+  val title: String,
+  val coachSpecialty: String,
+  val durationWeeks: Int,
+  val priceDisplay: String,
+  val deliverables: List<String>,
+  val isBooked: Boolean = false,
+  val userNotes: String = "",
+)
+
+data class CreatorRevenueStats(
+  val activeProSubscribers: Int = 48,
+  val subscriptionRevenueUsd: Double = 342.50,
+  val rewardedAdViews: Int = 1240,
+  val adRevenueUsd: Double = 68.20,
+  val affiliateClicks: Int = 315,
+  val affiliateCommissionUsd: Double = 194.80,
+  val coachBookingsCount: Int = 9,
+  val coachingRevenueUsd: Double = 441.00,
+) {
+  val totalEstimatedMonthlyUsd: Double
+    get() = subscriptionRevenueUsd + adRevenueUsd + affiliateCommissionUsd + coachingRevenueUsd
+}
+
+

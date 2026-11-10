@@ -3,6 +3,8 @@ package com.example.viewmodel
 import androidx.lifecycle.ViewModel
 import com.example.model.AiMealRecommendation
 import com.example.model.BuddyMember
+import com.example.model.CoachPlanPackage
+import com.example.model.CreatorRevenueStats
 import com.example.model.DailyNutritionSummary
 import com.example.model.DailyProgressStats
 import com.example.model.Exercise
@@ -10,6 +12,8 @@ import com.example.model.ExerciseType
 import com.example.model.GeneratedMeal
 import com.example.model.MealItem
 import com.example.model.MealType
+import com.example.model.SubscriptionTier
+import com.example.model.SupplementGearItem
 import com.example.model.UserProfile
 import com.example.model.Workout
 import com.example.model.maskEmailAddress
@@ -34,7 +38,14 @@ data class FitnessUiState(
   val buddies: List<BuddyMember> = emptyList(),
   val publicShareUrl: String = "https://ais-pre-eejz7f6w5k4fezdmmiwdyp-133740415274.asia-northeast1.run.app",
   val inviteCode: String = "FIT-PULSE-8924",
+  val subscriptionTier: SubscriptionTier = SubscriptionTier.FREE,
+  val proAiCredits: Int = 3,
+  val storeItems: List<SupplementGearItem> = emptyList(),
+  val coachPackages: List<CoachPlanPackage> = emptyList(),
+  val revenueStats: CreatorRevenueStats = CreatorRevenueStats(),
 ) {
+  val isProSubscriber: Boolean
+    get() = subscriptionTier != SubscriptionTier.FREE
   val totalCaloriesBurned: Int
     get() = workouts.filter { it.completed }.sumOf { it.caloriesBurned }
 
@@ -472,6 +483,88 @@ class FitnessViewModel : ViewModel() {
         BuddyMember("b4", "Chloe Adams", "🏃", "5km Outdoor Run & Hydrated 💧", 380, 21, true),
       )
 
+    val initialStoreItems =
+      listOf(
+        SupplementGearItem(
+          id = "s1",
+          name = "100% Gold Whey Protein Isolate (2 lb)",
+          category = "Supplements",
+          specBadge = "27g Protein • 5.5g BCAA",
+          benefit = "Ultra-filtered fast-digesting whey isolate for rapid post-workout muscle protein synthesis.",
+          priceDisplay = "$39.99 / ₹2,499",
+          affiliateCommission = "12% Partner Commission",
+          emoji = "🥤",
+          storeUrl = "https://www.amazon.com/s?k=whey+protein+isolate",
+          clicksCount = 128,
+        ),
+        SupplementGearItem(
+          id = "s2",
+          name = "Micronized Creatine Monohydrate (300g)",
+          category = "Supplements",
+          specBadge = "5g Pure Creatine / Scoop",
+          benefit = "Boosts ATP strength output for heavy bench press, squats, and explosive gym sets.",
+          priceDisplay = "$24.99 / ₹1,199",
+          affiliateCommission = "10% Partner Commission",
+          emoji = "⚡",
+          storeUrl = "https://www.amazon.com/s?k=creatine+monohydrate",
+          clicksCount = 94,
+        ),
+        SupplementGearItem(
+          id = "s3",
+          name = "Adjustable Cast-Iron Dumbbell Pair (5–52.5 lb)",
+          category = "Home Gym Gear",
+          specBadge = "15 Weight Settings",
+          benefit = "Replaces an entire rack of dumbbells for home bicep curls, shoulder presses, and lunges.",
+          priceDisplay = "$149.00 / ₹8,999",
+          affiliateCommission = "8% Partner Commission",
+          emoji = "🏋️",
+          storeUrl = "https://www.amazon.com/s?k=adjustable+dumbbells",
+          clicksCount = 52,
+        ),
+        SupplementGearItem(
+          id = "s4",
+          name = "Heavy-Duty Doorway Pull-Up & Dip Bar",
+          category = "Home Gym Gear",
+          specBadge = "No-Drill Steel Frame",
+          benefit = "Multi-grip bar for home back pull-ups, hanging leg raises, and floor push-up anchors.",
+          priceDisplay = "$32.50 / ₹1,699",
+          affiliateCommission = "10% Partner Commission",
+          emoji = "💪",
+          storeUrl = "https://www.amazon.com/s?k=doorway+pull+up+bar",
+          clicksCount = 41,
+        ),
+      )
+
+    val initialCoachPackages =
+      listOf(
+        CoachPlanPackage(
+          id = "c1",
+          title = "8-Week Lean Muscle & Macro Transformation",
+          coachSpecialty = "Hypertrophy & Custom Nutrition",
+          durationWeeks = 8,
+          priceDisplay = "$49.00 / ₹1,999",
+          deliverables =
+            listOf(
+              "Custom 5-day Gym or Home split tailored to your weak muscle groups",
+              "Weekly protein & calorie adjustments based on weight check-ins",
+              "1-on-1 form review & direct WhatsApp/In-App coach support",
+            ),
+        ),
+        CoachPlanPackage(
+          id = "c2",
+          title = "4-Week Shred & Six-Pack Core Accelerator",
+          coachSpecialty = "Fat Loss & Core Conditioning",
+          durationWeeks = 4,
+          priceDisplay = "$29.00 / ₹1,199",
+          deliverables =
+            listOf(
+              "High-protein calorie-deficit meal blueprint (Veg / Non-Veg)",
+              "Daily 20-minute metabolic HIIT & sculpted abs progression",
+              "Weekly accountability check-in & supplement stack guide",
+            ),
+        ),
+      )
+
     _uiState.value =
       FitnessUiState(
         workouts = initialWorkouts,
@@ -481,6 +574,8 @@ class FitnessViewModel : ViewModel() {
         activeProfileId = "u1",
         isAuthenticated = false,
         buddies = initialBuddies,
+        storeItems = initialStoreItems,
+        coachPackages = initialCoachPackages,
       )
   }
 
@@ -745,6 +840,85 @@ class FitnessViewModel : ViewModel() {
       }
     _uiState.update { state ->
       state.copy(meals = newMeals + state.meals)
+    }
+  }
+
+  fun upgradeSubscription(tier: SubscriptionTier) {
+    _uiState.update { state ->
+      val addedRevenue =
+        when (tier) {
+          SubscriptionTier.PRO_MONTHLY -> 4.99
+          SubscriptionTier.PRO_ANNUAL -> 29.99
+          SubscriptionTier.LIFETIME_VIP -> 59.99
+          SubscriptionTier.FREE -> 0.0
+        }
+      val newStats =
+        if (tier != SubscriptionTier.FREE && state.subscriptionTier == SubscriptionTier.FREE) {
+          state.revenueStats.copy(
+            activeProSubscribers = state.revenueStats.activeProSubscribers + 1,
+            subscriptionRevenueUsd = state.revenueStats.subscriptionRevenueUsd + addedRevenue,
+          )
+        } else {
+          state.revenueStats
+        }
+      state.copy(
+        subscriptionTier = tier,
+        proAiCredits = if (tier != SubscriptionTier.FREE) 999 else state.proAiCredits,
+        revenueStats = newStats,
+      )
+    }
+  }
+
+  fun watchRewardedAdForCredits() {
+    _uiState.update { state ->
+      state.copy(
+        proAiCredits = state.proAiCredits + 3,
+        revenueStats =
+          state.revenueStats.copy(
+            rewardedAdViews = state.revenueStats.rewardedAdViews + 1,
+            adRevenueUsd = state.revenueStats.adRevenueUsd + 0.05,
+          ),
+      )
+    }
+  }
+
+  fun recordAffiliateClick(itemId: String) {
+    _uiState.update { state ->
+      val updatedItems =
+        state.storeItems.map { item ->
+          if (item.id == itemId) item.copy(clicksCount = item.clicksCount + 1) else item
+        }
+      state.copy(
+        storeItems = updatedItems,
+        revenueStats =
+          state.revenueStats.copy(
+            affiliateClicks = state.revenueStats.affiliateClicks + 1,
+            affiliateCommissionUsd = state.revenueStats.affiliateCommissionUsd + 3.20,
+          ),
+      )
+    }
+  }
+
+  fun bookCoachingPlan(packageId: String, userNotes: String) {
+    _uiState.update { state ->
+      val updatedPackages =
+        state.coachPackages.map { pkg ->
+          if (pkg.id == packageId) pkg.copy(isBooked = true, userNotes = userNotes) else pkg
+        }
+      val bookedPkg = state.coachPackages.find { it.id == packageId }
+      val addedCoachRev = if (bookedPkg != null && !bookedPkg.isBooked) 49.0 else 0.0
+      state.copy(
+        coachPackages = updatedPackages,
+        revenueStats =
+          if (addedCoachRev > 0) {
+            state.revenueStats.copy(
+              coachBookingsCount = state.revenueStats.coachBookingsCount + 1,
+              coachingRevenueUsd = state.revenueStats.coachingRevenueUsd + addedCoachRev,
+            )
+          } else {
+            state.revenueStats
+          },
+      )
     }
   }
 }

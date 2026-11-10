@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PlayArrow
@@ -40,6 +41,8 @@ import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.outlined.CheckCircleOutline
@@ -105,6 +108,8 @@ fun FitPulseApp(
   var showAiMealGenerator by remember { mutableStateOf(false) }
   var showCommunityDialog by remember { mutableStateOf(false) }
   var showArtifactDialog by remember { mutableStateOf(false) }
+  var showMonetizationHub by remember { mutableStateOf(false) }
+  var monetizationInitialSection by remember { mutableStateOf(0) }
   var activeWorkoutToPlay by remember { mutableStateOf<Workout?>(null) }
 
   if (!uiState.isAuthenticated) {
@@ -183,6 +188,38 @@ fun FitPulseApp(
           }
 
           Spacer(modifier = Modifier.width(6.dp))
+
+          // PRO / Monetization & Store Pill
+          Surface(
+            shape = RoundedCornerShape(14.dp),
+            color =
+              if (uiState.isProSubscriber) NeonPulse.copy(alpha = 0.22f)
+              else EnergyAmber.copy(alpha = 0.22f),
+            modifier =
+              Modifier.clickable {
+                  monetizationInitialSection = 0
+                  showMonetizationHub = true
+                }
+                .testTag("btn_top_pro_store"),
+          ) {
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+              horizontalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+              Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = "FitPulse Pro & Store",
+                tint = if (uiState.isProSubscriber) NeonPulse else EnergyAmber,
+                modifier = Modifier.size(14.dp),
+              )
+              Text(
+                text = if (uiState.isProSubscriber) "PRO" else "PRO+",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                color = if (uiState.isProSubscriber) NeonPulse else EnergyAmber,
+              )
+            }
+          }
 
           // Public Share / Community Icon Button
           IconButton(
@@ -319,6 +356,10 @@ fun FitPulseApp(
           onOpenNutrientAnalyzer = { showNutrientAnalyzer = true },
           onOpenCommunity = { showCommunityDialog = true },
           onOpenArtifactDialog = { showArtifactDialog = true },
+          onOpenMonetization = { section ->
+            monetizationInitialSection = section
+            showMonetizationHub = true
+          },
         )
         1 -> WorkoutsScreen(
           workouts = uiState.filteredWorkouts,
@@ -334,12 +375,20 @@ fun FitPulseApp(
           onLogMealClicked = { showLogMealDialog = true },
           onOpenNutrientAnalyzer = { showNutrientAnalyzer = true },
           onOpenAiMealGenerator = { showAiMealGenerator = true },
+          onOpenSupplementStore = {
+            monetizationInitialSection = 1
+            showMonetizationHub = true
+          },
         )
         3 -> ProgressScreen(
           uiState = uiState,
           onOpenAiMealGenerator = { showAiMealGenerator = true },
           onOpenCommunity = { showCommunityDialog = true },
           onOpenArtifactDialog = { showArtifactDialog = true },
+          onOpenMonetization = { section ->
+            monetizationInitialSection = section
+            showMonetizationHub = true
+          },
         )
       }
     }
@@ -423,6 +472,22 @@ fun FitPulseApp(
       onDismiss = { showArtifactDialog = false },
     )
   }
+
+  // FitPulse Pro Subscriptions, Affiliate Gear Store, 1-on-1 Coaching & Creator Revenue Hub
+  if (showMonetizationHub) {
+    MonetizationHubDialog(
+      uiState = uiState,
+      initialSection = monetizationInitialSection,
+      onDismiss = { showMonetizationHub = false },
+      onUpgradeSubscription = viewModel::upgradeSubscription,
+      onWatchRewardedAd = viewModel::watchRewardedAdForCredits,
+      onAffiliateItemClick = { item -> viewModel.recordAffiliateClick(item.id) },
+      onQuickLogSupplementProtein = { name, cal, protein ->
+        viewModel.logMeal(name, MealType.SNACK, cal, protein, 3, 1)
+      },
+      onBookCoachPackage = viewModel::bookCoachingPlan,
+    )
+  }
 }
 
 @Composable
@@ -437,6 +502,7 @@ fun TodayScreen(
   onOpenNutrientAnalyzer: () -> Unit,
   onOpenCommunity: () -> Unit = {},
   onOpenArtifactDialog: () -> Unit = {},
+  onOpenMonetization: (Int) -> Unit = {},
 ) {
   LazyColumn(
     modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -732,6 +798,104 @@ fun TodayScreen(
             Icon(Icons.Default.Share, contentDescription = null, tint = Color(0xFF003444), modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(4.dp))
             Text("Invite", color = Color(0xFF003444), fontWeight = FontWeight.Bold)
+          }
+        }
+      }
+    }
+
+    // FitPulse Pro, Supplements Store & 1-on-1 Coaching Banner Card
+    item {
+      Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, EnergyAmber.copy(alpha = 0.45f)),
+        modifier =
+          Modifier.fillMaxWidth()
+            .clickable { onOpenMonetization(0) }
+            .testTag("card_monetization_hub_today"),
+      ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+          ) {
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(10.dp),
+              modifier = Modifier.weight(1f),
+            ) {
+              Box(
+                modifier =
+                  Modifier.size(40.dp)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(EnergyAmber, NeonPulse))),
+                contentAlignment = Alignment.Center,
+              ) {
+                Icon(
+                  imageVector = Icons.Default.MonetizationOn,
+                  contentDescription = null,
+                  tint = Color(0xFF002810),
+                  modifier = Modifier.size(22.dp),
+                )
+              }
+              Column {
+                Text(
+                  text = "FitPulse Pro, Gear Store & Coaching",
+                  style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
+                )
+                Text(
+                  text = "Subscriptions • Whey & Dumbbells • 1:1 Plans • Revenue",
+                  style = MaterialTheme.typography.labelSmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+              }
+            }
+            Surface(
+              shape = RoundedCornerShape(8.dp),
+              color = EnergyAmber.copy(alpha = 0.2f),
+            ) {
+              Text(
+                text = uiState.subscriptionTier.badgeText,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                color = EnergyAmber,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+              )
+            }
+          }
+
+          Spacer(modifier = Modifier.height(10.dp))
+
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            OutlinedButton(
+              onClick = { onOpenMonetization(1) },
+              shape = RoundedCornerShape(10.dp),
+              contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+              modifier = Modifier.weight(1f).testTag("btn_open_gear_store_today"),
+            ) {
+              Icon(Icons.Default.ShoppingBag, contentDescription = null, tint = PulseCyan, modifier = Modifier.size(14.dp))
+              Spacer(modifier = Modifier.width(4.dp))
+              Text("Whey & Gear", fontSize = 11.sp, color = PulseCyan, fontWeight = FontWeight.Bold)
+            }
+            OutlinedButton(
+              onClick = { onOpenMonetization(2) },
+              shape = RoundedCornerShape(10.dp),
+              contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+              modifier = Modifier.weight(1f).testTag("btn_open_coaching_today"),
+            ) {
+              Text("1:1 Coach", fontSize = 11.sp, color = NeonPulse, fontWeight = FontWeight.Bold)
+            }
+            OutlinedButton(
+              onClick = { onOpenMonetization(3) },
+              shape = RoundedCornerShape(10.dp),
+              contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+              modifier = Modifier.weight(1f).testTag("btn_open_earnings_today"),
+            ) {
+              Text("Earnings", fontSize = 11.sp, color = EnergyAmber, fontWeight = FontWeight.Bold)
+            }
           }
         }
       }
@@ -1118,6 +1282,7 @@ fun NutritionScreen(
   onLogMealClicked: () -> Unit,
   onOpenNutrientAnalyzer: () -> Unit,
   onOpenAiMealGenerator: () -> Unit,
+  onOpenSupplementStore: () -> Unit = {},
 ) {
   LazyColumn(
     modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -1172,6 +1337,48 @@ fun NutritionScreen(
             Text("AI Meal Generator", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
             Text("Goal-tailored recipes and macro splits", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
           }
+        }
+      }
+    }
+
+    // Verified Whey Protein & Creatine Affiliate Store Banner
+    item {
+      Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = EnergyAmber.copy(alpha = 0.14f)),
+        modifier =
+          Modifier.fillMaxWidth()
+            .clickable { onOpenSupplementStore() }
+            .testTag("card_supplement_store_nutrition"),
+      ) {
+        Row(
+          modifier = Modifier.fillMaxWidth().padding(14.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.weight(1f),
+          ) {
+            Icon(Icons.Default.ShoppingBag, contentDescription = null, tint = EnergyAmber, modifier = Modifier.size(24.dp))
+            Column {
+              Text(
+                text = "Whey Isolate & Creatine Store",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+              )
+              Text(
+                text = "Shop verified 27g protein isolate & home gym gear deals",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
+          }
+          Text(
+            text = "Shop →",
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+            color = EnergyAmber,
+          )
         }
       }
     }
@@ -1329,6 +1536,7 @@ fun ProgressScreen(
   onOpenAiMealGenerator: () -> Unit,
   onOpenCommunity: () -> Unit = {},
   onOpenArtifactDialog: () -> Unit = {},
+  onOpenMonetization: (Int) -> Unit = {},
 ) {
   LazyColumn(
     modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -1547,6 +1755,40 @@ fun ProgressScreen(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
+        }
+      }
+    }
+
+    item {
+      Card(
+        modifier =
+          Modifier.fillMaxWidth()
+            .clickable { onOpenMonetization(3) }
+            .testTag("card_creator_revenue_progress"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, NeonPulse.copy(alpha = 0.4f)),
+      ) {
+        Row(
+          modifier = Modifier.fillMaxWidth().padding(16.dp),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Column(modifier = Modifier.weight(1f)) {
+            Text(
+              text = "App Monetization & Revenue Hub",
+              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+              color = NeonPulse,
+            )
+            Text(
+              text = "Pro Subscriptions, Affiliate Store, 1:1 Coaching & AdMob Earnings",
+              style = MaterialTheme.typography.labelSmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+          TextButton(onClick = { onOpenMonetization(3) }) {
+            Text("View Revenue →", color = NeonPulse, fontWeight = FontWeight.Bold)
+          }
         }
       }
     }
